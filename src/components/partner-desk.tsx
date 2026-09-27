@@ -7,12 +7,7 @@ type Preview = {
   discount_pct: number;
   discount_cap: number;
   min_bill: number;
-  referrer_mode: "pct" | "flat";
-  referrer_pct: number | null;
-  referrer_flat: number | null;
-  platform_mode: "pct" | "flat";
-  platform_pct: number | null;
-  platform_flat: number | null;
+  valid_message?: string;
 };
 
 type LedgerRow = {
@@ -33,16 +28,18 @@ export function PartnerDesk({
   weekLabel,
   mapsUrl,
   instagramUrl,
+  chainReady,
 }: {
   ledger: LedgerRow[];
   netDue: number | null;
   weekLabel: string;
   mapsUrl: string | null;
   instagramUrl: string | null;
+  chainReady: boolean;
 }) {
+  const [gross, setGross] = useState("");
   const [code, setCode] = useState("");
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [gross, setGross] = useState("");
   const [isNew, setIsNew] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,39 +47,43 @@ export function PartnerDesk({
   const [maps, setMaps] = useState(mapsUrl ?? "");
   const [insta, setInsta] = useState(instagramUrl ?? "");
 
-  const calc = useMemo(() => {
-    if (!preview) return null;
-    const grossN = Number(gross);
-    if (!Number.isFinite(grossN) || grossN <= 0) return null;
-    const discount = Math.min(money((grossN * Number(preview.discount_pct)) / 100), Number(preview.discount_cap));
-    const referrer =
-      preview.referrer_mode === "pct"
-        ? money((grossN * Number(preview.referrer_pct)) / 100)
-        : Number(preview.referrer_flat);
-    const platform =
-      preview.platform_mode === "pct"
-        ? money((grossN * Number(preview.platform_pct)) / 100)
-        : Number(preview.platform_flat);
-    return { discount, payable: money(grossN - discount), referrer, platform, belowMin: grossN < Number(preview.min_bill) };
-  }, [gross, preview]);
+  const grossN = Number(gross);
 
-  async function verifyCode(event: FormEvent) {
-    event.preventDefault();
+  const calc = useMemo(() => {
+    if (!preview || !Number.isFinite(grossN) || grossN <= 0) return null;
+    const discount = Math.min(money((grossN * Number(preview.discount_pct)) / 100), Number(preview.discount_cap));
+    return {
+      discount,
+      payable: money(grossN - discount),
+      belowMin: grossN < Number(preview.min_bill),
+    };
+  }, [grossN, preview]);
+
+  async function checkCode(event?: FormEvent) {
+    event?.preventDefault();
     setError("");
     setToast("");
+    setPreview(null);
+    if (!Number.isFinite(grossN) || grossN <= 0) {
+      setError("Pehle bill amount daalo");
+      return;
+    }
+    if (!code.trim()) {
+      setError("Phir code daalo");
+      return;
+    }
     setLoading(true);
     try {
       const response = await fetch("/api/partner/preview", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, gross: grossN }),
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "Code invalid");
+      if (!response.ok) throw new Error(body.error || "Code not valid");
       setPreview(body);
     } catch (err) {
-      setPreview(null);
-      setError(err instanceof Error ? err.message : "Code invalid");
+      setError(err instanceof Error ? err.message : "Code not valid");
     } finally {
       setLoading(false);
     }
@@ -90,17 +91,18 @@ export function PartnerDesk({
 
   async function confirmRedeem(event: FormEvent) {
     event.preventDefault();
-    setError("");
+    if (!preview || !calc || calc.belowMin) return;
     setLoading(true);
+    setError("");
     try {
       const response = await fetch("/api/redeem", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code, gross: Number(gross), is_new: isNew }),
+        body: JSON.stringify({ code, gross: grossN, is_new: isNew }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Redeem fail");
-      setToast(`Ho gaya. Next code: ${body.next_code}`);
+      setToast(body.partner_message || `Done. Next code: ${body.next_code}`);
       setPreview(null);
       setCode("");
       setGross("");
@@ -113,91 +115,114 @@ export function PartnerDesk({
 
   async function saveProfile(event: FormEvent) {
     event.preventDefault();
-    setError("");
     const response = await fetch("/api/partner/profile", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ maps_url: maps, instagram_url: insta }),
     });
     const body = await response.json();
-    if (!response.ok) setError(body.error || "Profile save nahi hua");
-    else setToast("Profile save ho gaya");
+    setToast(response.ok ? "Profile save ho gaya" : body.error || "Fail");
   }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
       {toast ? (
-        <p className="lg:col-span-2 rounded-xl bg-amber px-4 py-3 font-semibold text-navy">{toast}</p>
+        <p className="lg:col-span-2 rounded-xl bg-brand-yellow px-4 py-3 font-semibold text-brand-black">{toast}</p>
       ) : null}
-      <section className="rounded-2xl bg-white p-5 shadow">
-        <h2 className="text-lg font-semibold">Code verify</h2>
-        <form onSubmit={verifyCode} className="mt-3 flex gap-2">
+      <section className="rounded-2xl border border-brand-blue/10 bg-white p-5 shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-wide text-brand-blue">Section 1 — Bill pe discount</p>
+        <h2 className="mt-1 text-lg font-bold text-brand-black">Payment par code</h2>
+        <p className="mt-1 text-sm text-brand-blue/70">Pehle bill, phir code. Valid code par discount dikhega.</p>
+        <label className="mt-4 block text-sm font-medium text-brand-black">
+          Total bill amount (₹)
           <input
-            value={code}
-            onChange={(event) => setCode(event.target.value.toUpperCase())}
-            placeholder="NK-XXXXX"
-            className="flex-1 rounded-xl border border-navy/15 px-3 py-3 font-mono uppercase"
+            required
+            inputMode="decimal"
+            value={gross}
+            onChange={(event) => {
+              setGross(event.target.value);
+              setPreview(null);
+              setError("");
+            }}
+            className="mt-1 w-full rounded-xl border border-brand-blue/20 px-3 py-3 text-lg"
+            placeholder="5000"
           />
-          <button className="rounded-full bg-navy px-4 py-3 font-semibold text-white" disabled={loading}>
-            Verify
+        </label>
+        <form onSubmit={checkCode} className="mt-3 space-y-3">
+          <label className="block text-sm font-medium text-brand-black">
+            Referral code
+            <input
+              value={code}
+              onChange={(event) => {
+                setCode(event.target.value.toUpperCase());
+                setPreview(null);
+              }}
+              placeholder="NK-XXXXX"
+              className="mt-1 w-full rounded-xl border border-brand-blue/20 px-3 py-3 font-mono uppercase"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-full bg-brand-blue px-4 py-3 font-semibold text-white disabled:opacity-60"
+          >
+            {loading ? "Check ho raha hai..." : "Code check karo"}
           </button>
         </form>
-        {preview ? (
-          <form onSubmit={confirmRedeem} className="mt-4 space-y-3">
-            <p className="text-navy">
-              Customer: <strong>{preview.customer_name || "—"}</strong> · discount {preview.discount_pct}% (cap ₹
-              {preview.discount_cap})
+        {preview && calc && !calc.belowMin ? (
+          <div className="mt-4 rounded-xl border-2 border-brand-yellow bg-brand-yellow/20 p-4">
+            <p className="font-bold text-brand-black">{preview.valid_message}</p>
+            <p className="mt-1 text-sm text-brand-blue">
+              Customer: {preview.customer_name || "—"} · discount {preview.discount_pct}%
             </p>
-            <label className="block text-sm">
-              Gross bill
-              <input
-                required
-                inputMode="decimal"
-                value={gross}
-                onChange={(event) => setGross(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-navy/15 px-3 py-3"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isNew} onChange={(event) => setIsNew(event.target.checked)} />
-              New customer
-            </label>
-            {calc ? (
-              <dl className="grid grid-cols-2 gap-2 text-sm">
-                <div>Discount ₹{calc.discount}</div>
-                <div>Payable ₹{calc.payable}</div>
-                <div>Referrer ₹{calc.referrer}</div>
-                <div>Platform ₹{calc.platform}</div>
-              </dl>
-            ) : null}
-            {calc?.belowMin ? <p className="text-sm text-red-700">Minimum bill ₹{preview.min_bill}</p> : null}
-            <button className="rounded-full bg-amber px-4 py-3 font-semibold text-navy" disabled={loading || calc?.belowMin}>
-              Confirm
-            </button>
-          </form>
+            <form onSubmit={confirmRedeem} className="mt-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={isNew} onChange={(event) => setIsNew(event.target.checked)} />
+                Naya customer
+              </label>
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-3 w-full rounded-full bg-brand-black px-4 py-3 font-semibold text-white"
+              >
+                Confirm — customer ko WhatsApp bhejo
+              </button>
+            </form>
+          </div>
         ) : null}
-        {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
+        {calc?.belowMin ? <p className="mt-2 text-sm text-red-700">Minimum bill ₹{preview?.min_bill}</p> : null}
+        {error ? <p className="mt-3 text-sm font-semibold text-red-700">{error}</p> : null}
       </section>
       <section className="space-y-4">
-        <div className="rounded-2xl bg-navy p-5 text-white">
-          <p className="text-sm text-amber">Settlement · {weekLabel}</p>
+        <div className="rounded-2xl bg-brand-blue p-5 text-white">
+          <p className="text-sm text-brand-yellow">Settlement · {weekLabel}</p>
           <p className="mt-2 text-2xl font-bold">{netDue == null ? "Abhi settle nahi" : `Net due ₹${netDue}`}</p>
         </div>
-        <a href="/api/partner/qr" className="block rounded-full bg-amber px-4 py-3 text-center font-semibold text-navy">
-          QR poster download
-        </a>
-        <form onSubmit={saveProfile} className="rounded-2xl bg-white p-5 shadow space-y-3">
-          <h2 className="font-semibold">Profile</h2>
+        {chainReady ? (
+          <a
+            href="/api/partner/qr"
+            className="block rounded-full bg-brand-yellow px-4 py-3 text-center font-bold text-brand-black"
+          >
+            QR poster download
+          </a>
+        ) : (
+          <p className="rounded-2xl border border-brand-blue/15 bg-white px-4 py-3 text-sm text-brand-blue/80">
+            Customer QR tabhi milega jab admin aapki shop ko doosri partners ke saath chain mein merge kar dega.
+          </p>
+        )}
+        <form onSubmit={saveProfile} className="rounded-2xl border border-brand-blue/10 bg-white p-5 shadow-sm space-y-3">
+          <h2 className="font-bold text-brand-black">Shop profile</h2>
           <input value={maps} onChange={(event) => setMaps(event.target.value)} placeholder="Maps URL" className="w-full rounded-xl border px-3 py-2" />
           <input value={insta} onChange={(event) => setInsta(event.target.value)} placeholder="Instagram URL" className="w-full rounded-xl border px-3 py-2" />
-          <button className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white">Save</button>
+          <button className="rounded-full bg-brand-blue px-4 py-2 text-sm font-semibold text-white">Save</button>
         </form>
       </section>
-      <section className="lg:col-span-2 rounded-2xl bg-white p-5 shadow">
-        <h2 className="font-semibold">Is hafte ka ledger</h2>
+      <section className="lg:col-span-2 rounded-2xl border border-brand-blue/10 bg-white p-5 shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-wide text-brand-blue">Section 3 — Is hafte</p>
+        <h2 className="font-bold text-brand-black">Redemption ledger</h2>
         <table className="mt-3 w-full text-left text-sm">
           <thead>
-            <tr className="text-navy/60">
+            <tr className="text-brand-blue/60">
               <th className="py-2">Customer</th>
               <th>Gross</th>
               <th>Referrer</th>
@@ -206,7 +231,7 @@ export function PartnerDesk({
           </thead>
           <tbody>
             {ledger.map((row) => (
-              <tr key={row.id} className="border-t border-navy/10">
+              <tr key={row.id} className="border-t border-brand-blue/10">
                 <td className="py-2">{row.customer}</td>
                 <td>₹{row.gross}</td>
                 <td>₹{row.referrer}</td>
@@ -215,7 +240,7 @@ export function PartnerDesk({
             ))}
             {ledger.length === 0 ? (
               <tr>
-                <td className="py-3 text-navy/60" colSpan={4}>
+                <td className="py-3 text-brand-blue/60" colSpan={4}>
                   Is hafte koi redeem nahi.
                 </td>
               </tr>

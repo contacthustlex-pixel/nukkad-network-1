@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 import { Logo } from "@/components/logo";
+import { PartnerChainBanner } from "@/components/partner-chain-banner";
 import { PartnerDesk } from "@/components/partner-desk";
 import { PartnerLogin } from "@/components/partner-login";
+import { ReferralCustomerPanel } from "@/components/referral-customer-panel";
+import { loadReferralCustomerRows } from "@/lib/referrals";
 import { readPartner } from "@/lib/session";
 import { createServiceClient } from "@/lib/supabase-server";
 import { currentWeekBounds } from "@/lib/week";
@@ -11,7 +14,7 @@ export default async function PartnerPage() {
   const businessId = readPartner(jar.get("nk_partner")?.value);
   if (!businessId) {
     return (
-      <main className="min-h-full bg-background px-4 py-8">
+      <main className="min-h-full px-4 py-8">
         <div className="mx-auto max-w-5xl">
           <Logo />
           <PartnerLogin />
@@ -24,8 +27,19 @@ export default async function PartnerPage() {
   const { data: shops } = await supabase.from("businesses").select("*").eq("id", businessId).limit(1);
   const business = shops?.[0];
   if (!business) {
-    return <main className="p-8 text-navy">Session ki shop nahi mili. Dubara login karo.</main>;
+    return <main className="p-8 text-brand-blue">Session ki shop nahi mili. Dubara login karo.</main>;
   }
+
+  const { data: notices } = await supabase
+    .from("chain_notifications")
+    .select("message")
+    .eq("business_id", businessId)
+    .eq("seen", false)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  const chainReady = Boolean(business.chain_id);
+  const chainBanner = notices?.[0]?.message as string | undefined;
 
   if (business.status === "blocked") {
     return (
@@ -34,14 +48,17 @@ export default async function PartnerPage() {
         <section className="rounded-3xl bg-white p-6 shadow">
           <h1 className="text-2xl font-bold">{business.name}</h1>
           <p className="mt-3 text-lg">Payment pending hai, isliye shop block hai.</p>
-          <p className="mt-4 rounded-2xl bg-amber px-4 py-4 text-center text-xl font-bold">UPI nukkad@upi</p>
-          <p className="mt-3 text-sm text-navy/70">Admin confirm karega, phir shop wapas active hogi.</p>
+          <p className="mt-4 rounded-2xl bg-brand-yellow px-4 py-4 text-center text-xl font-bold text-brand-black">
+            UPI nukkad@upi
+          </p>
+          <p className="mt-3 text-sm text-brand-blue/70">Admin confirm karega, phir shop wapas active hogi.</p>
         </section>
       </main>
     );
   }
 
   const week = currentWeekBounds();
+  const referralRows = await loadReferralCustomerRows(supabase, { sourceBusinessId: businessId });
   const [{ data: redemptions }, { data: ledger }, { data: customers }, { data: settlements }] = await Promise.all([
     supabase.from("redemptions").select("*").eq("business_id", businessId).limit(200),
     supabase.from("commission_ledger").select("*").limit(500),
@@ -65,20 +82,28 @@ export default async function PartnerPage() {
   });
 
   return (
-    <main className="mx-auto min-h-full max-w-5xl px-4 py-8">
-      <div className="mb-6 flex items-end justify-between gap-4">
+    <main className="mx-auto min-h-full max-w-5xl space-y-8 px-4 py-8">
+      <div className="flex items-end justify-between gap-4">
         <div>
           <Logo />
-          <h1 className="mt-3 text-3xl font-bold">{business.name}</h1>
+          <h1 className="mt-3 text-3xl font-bold text-brand-blue">{business.name}</h1>
+          <p className="text-sm text-brand-black/60">Partner dashboard</p>
         </div>
-        <p className="text-sm uppercase tracking-wide text-navy/60">{business.status}</p>
+        <p className="text-sm uppercase tracking-wide text-brand-blue/60">{business.status}</p>
       </div>
+      {chainBanner ? <PartnerChainBanner message={chainBanner} /> : null}
+      <ReferralCustomerPanel
+        title="Section 2 — Aapke QR se scan kiye customers"
+        rows={referralRows}
+        sourceBusinessId={businessId}
+      />
       <PartnerDesk
         ledger={lines}
         netDue={settlements?.[0] ? Number(settlements[0].net_due) : null}
         weekLabel={week.label}
         mapsUrl={business.maps_url}
         instagramUrl={business.instagram_url}
+        chainReady={chainReady}
       />
     </main>
   );

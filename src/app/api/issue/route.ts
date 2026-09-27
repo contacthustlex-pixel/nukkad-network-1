@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyOtp } from "@/lib/otp";
 import { createServiceClient } from "@/lib/supabase-server";
-import { sendTemplate } from "@/lib/whatsapp";
+import { defaultOrigin, linksForCode, sendFirstCodeMessage } from "@/lib/whatsapp-messages";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -27,10 +27,21 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    await sendTemplate("T1", phone, {
+
+    const { data: bizRows } = await supabase.from("businesses").select("name").eq("id", businessId).limit(1);
+    const origin = defaultOrigin(request);
+    const code = String(data?.code ?? "");
+    const links = linksForCode(origin, code);
+
+    await sendFirstCodeMessage({
+      phone,
       name,
-      code: String(data?.code ?? ""),
+      code,
+      sourceShop: String(bizRows?.[0]?.name ?? "Shop"),
+      shopsLink: links.shops,
+      aboutLink: links.about,
     });
+
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(

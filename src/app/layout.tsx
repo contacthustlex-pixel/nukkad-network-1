@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_Devanagari } from "next/font/google";
+import { SiteNav } from "@/components/site-nav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,7 +30,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${devanagari.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-navy">{children}</body>
+      <body className="min-h-full flex flex-col bg-background text-brand-black">
+        <SiteNav />
+        {children}
+      </body>
     </html>
   );
 }

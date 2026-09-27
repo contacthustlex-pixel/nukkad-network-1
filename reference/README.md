@@ -16,6 +16,8 @@ Next.js App Router + TypeScript + Tailwind, Supabase (Postgres source of truth),
 - `FOLLOWUP_AUTO` starts from the env var. Phase 10 persists the admin toggle in `settings` so it can change without a deploy.
 - The anon key can select `categories`, `businesses`, and `rate_cards` only. Every RPC is `SECURITY DEFINER` and executable by `service_role`. The Next.js server calls those RPCs. Extra write RPCs, because the client never writes tables directly: `save_otp`, `consume_otp`, `record_followup`, `file_dispute`.
 - Local verification uses `scripts/local-api.mjs`, a small PostgREST-style API on `http://127.0.0.1:54321` backed by Postgres (PGlite). `.env.local` points the app there until real Supabase keys are pasted in. `.data/` is gitignored.
+- **Admin panel** is not linked from the public home or nav. Open it only via the secret path (default **`/nukkad-ops`**). Set `ADMIN_PANEL_PATH` in `.env.local` if you rename it; the route folder must match. **`/admin` returns 404.** Login: `ADMIN_PHONE` from env (e.g. `9999999999`), mock OTP **`1234`**.
+- **Partner signup** at `/partner/signup` creates a `partner_applications` row. Admin approves in the ops panel, then merges two or more shops into a **chain**. Partners get a dashboard banner (and WhatsApp stub); **QR download** is enabled only after `businesses.chain_id` is set.
 
 ## Rate cards
 

@@ -24,11 +24,24 @@ const db = new PGlite({
 
 async function init() {
   const ready = await db.query("select to_regclass('public.businesses') as name");
-  if (ready.rows[0]?.name) return;
-  const schema = readFileSync(new URL("../supabase/migrations/001_schema.sql", import.meta.url), "utf8");
-  const logic = readFileSync(new URL("../supabase/migrations/002_logic.sql", import.meta.url), "utf8");
-  await db.exec(schema);
-  await db.exec(logic);
+  if (!ready.rows[0]?.name) {
+    const schema = readFileSync(new URL("../supabase/migrations/001_schema.sql", import.meta.url), "utf8");
+    const logic = readFileSync(new URL("../supabase/migrations/002_logic.sql", import.meta.url), "utf8");
+    await db.exec(schema);
+    await db.exec(logic);
+  }
+  try {
+    const extra = readFileSync(new URL("../supabase/migrations/003_network_businesses.sql", import.meta.url), "utf8");
+    await db.exec(extra);
+  } catch {
+    /* optional seed */
+  }
+  try {
+    const partners = readFileSync(new URL("../supabase/migrations/004_partners_chains.sql", import.meta.url), "utf8");
+    await db.exec(partners);
+  } catch {
+    /* optional migration */
+  }
 }
 
 function isService(req) {

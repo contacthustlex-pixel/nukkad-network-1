@@ -2,7 +2,12 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { readPartner } from "@/lib/session";
 import { createServiceClient } from "@/lib/supabase-server";
-import { sendTemplate } from "@/lib/whatsapp";
+import {
+  complaintLink,
+  defaultOrigin,
+  linksForCode,
+  sendRedemptionMessage,
+} from "@/lib/whatsapp-messages";
 
 export async function POST(request: Request) {
   const jar = await cookies();
@@ -27,19 +32,35 @@ export async function POST(request: Request) {
     gross,
     is_new: isNew,
   });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return NextResponse.json({ error: error.message || "Code not valid" }, { status: 400 });
 
   let phone = "";
   if (customerId) {
     const { data: customers } = await supabase.from("customers").select("phone").eq("id", customerId).limit(1);
     phone = customers?.[0]?.phone ?? "";
   }
-  await sendTemplate("T2", phone, {
-    code,
-    next_code: String(data?.next_code ?? ""),
-    discount: String(data?.discount ?? ""),
-    net_payable: String(data?.net_payable ?? ""),
+
+  const origin = defaultOrigin(request);
+  const nextCode = String(data?.next_code ?? "");
+  const links = linksForCode(origin, nextCode);
+  const redemptionId = String(data?.redemption_id ?? "");
+
+  await sendRedemptionMessage({
+    phone,
+    gross,
+    discount: Number(data?.discount ?? 0),
+    netPayable: Number(data?.net_payable ?? 0),
+    nextCode,
+    shopsLink: links.shops,
+    aboutLink: links.about,
+    complaintLink: redemptionId ? complaintLink(origin, redemptionId) : `${origin}/about`,
   });
 
-  return NextResponse.json(data);
+  const discount = Number(data?.discount ?? 0);
+  const net = Number(data?.net_payable ?? 0);
+
+  return NextResponse.json({
+    ...data,
+    partner_message: `Code valid. Bill ₹${gross} → customer pay ₹${net} (${discount} off). WhatsApp bhej diya.`,
+  });
 }

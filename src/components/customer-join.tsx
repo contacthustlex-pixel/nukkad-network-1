@@ -78,11 +78,14 @@ export function CustomerJoin({
         <p className="mt-3 text-sm text-navy/80">7 din tak valid · {expiry}</p>
         <p className="mt-4 text-base font-medium text-navy">Agle shop par yeh code dikhao, discount lo.</p>
         <div className="mt-6 flex flex-col gap-3">
-          <Link href={`/shops?c=${issued.code}`} className="rounded-full bg-amber px-4 py-3 font-semibold text-navy">
-            Linked Shops
+          <Link
+            href={`/shops?c=${issued.code}`}
+            className="rounded-full bg-brand-yellow px-4 py-3 font-semibold text-brand-black"
+          >
+            Option 1 — Discount shops
           </Link>
-          <Link href="/about" className="rounded-full border border-navy/20 px-4 py-3 font-semibold text-navy">
-            About
+          <Link href="/about" className="rounded-full border border-brand-blue/20 px-4 py-3 font-semibold text-brand-blue">
+            Option 2 — About Nukkad + network
           </Link>
           <Link href={`/my/${phone}`} className="text-sm font-medium text-navy/70 underline">
             Mera code dekho
@@ -96,7 +99,10 @@ export function CustomerJoin({
     <section className="rounded-3xl bg-white p-6 shadow-lg">
       <p className="text-sm text-navy/70">{business.category}</p>
       <h1 className="mt-1 text-2xl font-bold text-navy">{business.name}</h1>
-      <p className="mt-2 text-sm text-navy/80">Naam aur phone daalo. OTP aayega, phir aapka referral code.</p>
+      <p className="mt-2 text-sm text-brand-blue/80">
+        Naam aur phone daalo. Yeh detail <strong>{business.name}</strong> ke partner dashboard aur Nukkad Admin par dikhegi.
+        Code WhatsApp par aayega.
+      </p>
       {step === "form" ? (
         <form onSubmit={send} className="mt-5 space-y-3">
           <label className="block text-sm font-medium text-navy">
