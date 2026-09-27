@@ -14,6 +14,7 @@ Next.js App Router + TypeScript + Tailwind, Supabase (Postgres source of truth),
 - Customer page `/my/[token]` uses the customer's phone digits as the token.
 - A settlement week is the Monday–Sunday window ending on the settle date (Asia/Kolkata). `dues` are commissions owed by the redeeming shop (referrer + platform). `credits` are referrer commissions that shop earned. `net_due = dues - credits`. Only `net_due > 0` unpaid rows are blocked on Monday.
 - `FOLLOWUP_AUTO` starts from the env var. Phase 10 persists the admin toggle in `settings` so it can change without a deploy.
+- The anon key can select `categories`, `businesses`, and `rate_cards` only. Every RPC is `SECURITY DEFINER` and executable by `service_role`. The Next.js server calls those RPCs. Extra write RPCs, because the client never writes tables directly: `save_otp`, `consume_otp`, `record_followup`, `file_dispute`.
 - Local verification uses Postgres + PostgREST when a hosted Supabase project is not configured. Production uses the Supabase URL and keys in `.env.local`.
 
 ## Rate cards
