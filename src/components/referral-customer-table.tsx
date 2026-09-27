@@ -2,6 +2,7 @@
 
 import type { ReferralCustomerRow } from "@/lib/referrals";
 import { FOLLOWUP_PROMPT, whatsappChatLink } from "@/lib/site-url";
+import { ShopNameWithTier } from "@/components/tier-badge";
 
 export function ReferralCustomerTable({
   title,
@@ -52,7 +53,11 @@ export function ReferralCustomerTable({
               <tr key={row.key} className="border-t border-brand-blue/10">
                 <td className="py-2 pr-2 font-medium text-brand-black">{row.name}</td>
                 <td className="py-2 pr-2">{row.phone}</td>
-                {showSource ? <td className="py-2 pr-2">{row.sourceBusinessName}</td> : null}
+                {showSource ? (
+                  <td className="py-2 pr-2">
+                    <ShopNameWithTier name={row.sourceBusinessName} tier={row.sourceBusinessTier} />
+                  </td>
+                ) : null}
                 <td className="py-2 pr-2">
                   {row.redeemed ? (
                     <span className="rounded-full bg-brand-blue/10 px-2 py-0.5 text-brand-blue">Code use ho gaya</span>

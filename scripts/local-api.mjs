@@ -60,6 +60,12 @@ async function init() {
   } catch {
     /* optional migration */
   }
+  try {
+    const tier = readFileSync(new URL("../supabase/migrations/008_tier.sql", import.meta.url), "utf8");
+    await db.exec(tier);
+  } catch {
+    /* optional migration */
+  }
 }
 
 function isService(req) {

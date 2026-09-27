@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { parseTier, type ShopTier } from "@/lib/tiers";
 
 export type ReferralCustomerRow = {
   key: string;
@@ -7,6 +8,7 @@ export type ReferralCustomerRow = {
   phone: string;
   sourceBusinessId: string;
   sourceBusinessName: string;
+  sourceBusinessTier: ShopTier | null;
   activeCode: string | null;
   scannedAt: string;
   redeemed: boolean;
@@ -23,11 +25,14 @@ export async function loadReferralCustomerRows(
       supabase.from("customers").select("id,name,phone").limit(2000),
       supabase.from("referral_codes").select("*").order("created_at", { ascending: false }).limit(5000),
       supabase.from("redemptions").select("id,code_id,customer_id,created_at").limit(5000),
-      supabase.from("businesses").select("id,name").limit(200),
+      supabase.from("businesses").select("id,name,tier").limit(200),
     ]);
 
   const customerMap = new Map((customers ?? []).map((row) => [row.id as string, row]));
   const businessNames = new Map((businesses ?? []).map((row) => [row.id as string, row.name as string]));
+  const businessTiers = new Map(
+    (businesses ?? []).map((row) => [row.id as string, parseTier(row.tier as string | null)]),
+  );
   const codeById = new Map((codes ?? []).map((row) => [row.id as string, row]));
 
   const redemptionByCode = new Map<string, { id: string; created_at: string }>();
@@ -81,6 +86,7 @@ export async function loadReferralCustomerRows(
       phone: customer.phone as string,
       sourceBusinessId: latestCode.source_business_id as string,
       sourceBusinessName: businessNames.get(latestCode.source_business_id as string) || "Shop",
+      sourceBusinessTier: businessTiers.get(latestCode.source_business_id as string) ?? null,
       activeCode: (activeForCustomer?.code as string) ?? null,
       scannedAt: latestCode.created_at as string,
       redeemed,

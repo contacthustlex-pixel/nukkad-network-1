@@ -10,9 +10,11 @@ import { Logo } from "@/components/logo";
 import { ReferralCustomerPanel } from "@/components/referral-customer-panel";
 import { loadReferralCustomerRows } from "@/lib/referrals";
 import { loadAdminInsightSeries } from "@/lib/admin-insights-data";
+import { loadTierSuggestion, signedPriceListUrl } from "@/lib/admin-tier-enrichment";
 import { getFollowupAuto } from "@/lib/settings";
 import { readAdmin } from "@/lib/session";
 import { createServiceClient } from "@/lib/supabase-server";
+import { parseTier } from "@/lib/tiers";
 
 export default async function OpsAdminPage() {
   const jar = await cookies();
@@ -33,7 +35,7 @@ export default async function OpsAdminPage() {
     supabase
       .from("businesses")
       .select(
-        "id,name,slug,phone,chain_id,status,owner_name,daily_footfall,peak_hours,customer_type,category_id,created_at,pincode,area,address,latitude,longitude",
+        "id,name,slug,phone,chain_id,status,owner_name,daily_footfall,peak_hours,customer_type,category_id,created_at,pincode,area,address,latitude,longitude,price_min,price_max,price_list_url,tier",
       )
       .order("created_at", { ascending: false })
       .limit(200),
@@ -63,33 +65,55 @@ export default async function OpsAdminPage() {
     status: row.status as string,
   }));
 
-  const pendingPartners = (businesses ?? [])
-    .filter((row) => row.status === "pending")
-    .map((row) => ({
-      id: row.id as string,
-      name: row.name as string,
-      slug: row.slug as string,
-      phone: row.phone as string,
-      owner_name: (row.owner_name as string | null) ?? null,
-      category: categoryNames.get(row.category_id as string) || "—",
-      daily_footfall: row.daily_footfall != null ? Number(row.daily_footfall) : null,
-      peak_hours: (row.peak_hours as string | null) ?? null,
-      customer_type: (row.customer_type as string | null) ?? null,
-      pincode: (row.pincode as string | null) ?? null,
-      area: (row.area as string | null) ?? null,
-      address: (row.address as string | null) ?? null,
-      created_at: row.created_at as string,
-    }));
+  const pendingRaw = (businesses ?? []).filter((row) => row.status === "pending");
 
-  const bizList = (businesses ?? [])
-    .filter((row) => row.status === "active")
-    .map((row) => ({
-    id: row.id as string,
-    name: row.name as string,
-    slug: row.slug as string,
-    phone: row.phone as string,
-    chain_id: (row.chain_id as string | null) ?? null,
-  }));
+  const pendingPartners = await Promise.all(
+    pendingRaw.map(async (row) => {
+      const id = row.id as string;
+      const [suggestion, price_list_preview_url] = await Promise.all([
+        loadTierSuggestion(supabase, id),
+        signedPriceListUrl(supabase, row.price_list_url as string | null),
+      ]);
+      return {
+        id,
+        name: row.name as string,
+        slug: row.slug as string,
+        phone: row.phone as string,
+        owner_name: (row.owner_name as string | null) ?? null,
+        category: categoryNames.get(row.category_id as string) || "—",
+        daily_footfall: row.daily_footfall != null ? Number(row.daily_footfall) : null,
+        peak_hours: (row.peak_hours as string | null) ?? null,
+        customer_type: (row.customer_type as string | null) ?? null,
+        pincode: (row.pincode as string | null) ?? null,
+        area: (row.area as string | null) ?? null,
+        address: (row.address as string | null) ?? null,
+        price_min: row.price_min != null ? Number(row.price_min) : null,
+        price_max: row.price_max != null ? Number(row.price_max) : null,
+        price_list_url: (row.price_list_url as string | null) ?? null,
+        price_list_preview_url,
+        created_at: row.created_at as string,
+        suggestion,
+      };
+    }),
+  );
+
+  const activeRaw = (businesses ?? []).filter((row) => row.status === "active");
+
+  const bizList = await Promise.all(
+    activeRaw.map(async (row) => {
+      const id = row.id as string;
+      const suggestion = await loadTierSuggestion(supabase, id);
+      return {
+        id,
+        name: row.name as string,
+        slug: row.slug as string,
+        phone: row.phone as string,
+        chain_id: (row.chain_id as string | null) ?? null,
+        tier: parseTier(row.tier as string | null),
+        suggestion,
+      };
+    }),
+  );
 
   const disputeRows = (disputes ?? []).map((row) => {
     const red = redemptionMap.get(row.redemption_id as string);

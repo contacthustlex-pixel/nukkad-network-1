@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { ShopNameWithTier } from "@/components/tier-badge";
+import { tiersCompatible, tierLabel, type ShopTier } from "@/lib/tiers";
 
 type Biz = {
   id: string;
@@ -9,6 +11,8 @@ type Biz = {
   slug: string;
   phone: string;
   chain_id: string | null;
+  tier: ShopTier | null;
+  suggestion: { suggested_tier: ShopTier; avg_bill: number; source: string } | null;
 };
 
 export function AdminMergeChains({ businesses }: { businesses: Biz[] }) {
@@ -16,6 +20,19 @@ export function AdminMergeChains({ businesses }: { businesses: Biz[] }) {
   const [name, setName] = useState("Mukherjee Nagar Pilot");
   const [selected, setSelected] = useState<string[]>([]);
   const [message, setMessage] = useState("");
+
+  const eligible = useMemo(() => businesses.filter((b) => !b.chain_id && b.tier), [businesses]);
+
+  const anchorTier = useMemo(() => {
+    if (selected.length === 0) return null;
+    const first = eligible.find((b) => b.id === selected[0]);
+    return first?.tier ?? null;
+  }, [selected, eligible]);
+
+  const visible = useMemo(() => {
+    if (!anchorTier) return eligible;
+    return eligible.filter((b) => tiersCompatible(anchorTier, b.tier));
+  }, [eligible, anchorTier]);
 
   function toggle(id: string) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -36,12 +53,12 @@ export function AdminMergeChains({ businesses }: { businesses: Biz[] }) {
     }
   }
 
-  const eligible = businesses.filter((b) => !b.chain_id);
-
   return (
     <section className="rounded-2xl border border-brand-blue/10 bg-white p-5 shadow-sm">
       <h2 className="text-xl font-bold text-brand-blue">Merge chain</h2>
-      <p className="text-sm text-brand-black/70">3–4 approved partners select karo — ek referral chain banegi. QR tab unlock hoga.</p>
+      <p className="text-sm text-brand-black/70">
+        Sirf same ya adjacent tier (E↔M↔P). Economy + Premium ek chain mein nahi.
+      </p>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -49,14 +66,22 @@ export function AdminMergeChains({ businesses }: { businesses: Biz[] }) {
         placeholder="Chain name"
       />
       <ul className="mt-4 space-y-2">
-        {eligible.map((biz) => (
-          <li key={biz.id} className="flex items-center gap-2 rounded-lg border px-3 py-2">
+        {visible.map((biz) => (
+          <li key={biz.id} className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2">
             <input type="checkbox" checked={selected.includes(biz.id)} onChange={() => toggle(biz.id)} />
-            <span className="font-medium">{biz.name}</span>
-            <span className="text-xs text-brand-blue/60">{biz.phone}</span>
+            <ShopNameWithTier name={biz.name} tier={biz.tier} className="font-medium" />
+            <span className="text-xs text-brand-blue/60">{biz.tier ? tierLabel(biz.tier) : ""}</span>
+            {biz.suggestion ? (
+              <span className="text-xs text-brand-black/50">
+                Suggested tier: {tierLabel(biz.suggestion.suggested_tier)} (actual avg bill ₹
+                {biz.suggestion.avg_bill})
+              </span>
+            ) : null}
           </li>
         ))}
-        {eligible.length === 0 ? <li className="text-sm text-brand-blue/60">Sab partners pehle se chain mein hain.</li> : null}
+        {eligible.length === 0 ? (
+          <li className="text-sm text-brand-blue/60">Koi tier-wali active shop nahi.</li>
+        ) : null}
       </ul>
       <button
         type="button"

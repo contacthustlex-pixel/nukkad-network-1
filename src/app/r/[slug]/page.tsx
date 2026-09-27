@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { CustomerJoin } from "@/components/customer-join";
 import { Logo } from "@/components/logo";
+import { ShopNameWithTier } from "@/components/tier-badge";
 import { createServiceClient } from "@/lib/supabase-server";
+import { parseTier } from "@/lib/tiers";
 
 export default async function ReferralPage({
   params,
@@ -27,17 +29,20 @@ export default async function ReferralPage({
     .eq("id", business.category_id)
     .limit(1);
   const category = categories?.[0]?.name ?? "Shop";
+  const tier = parseTier(business.tier as string | null);
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-md flex-col gap-6 px-4 py-8">
       <Logo />
       {business.status !== "active" ? (
         <section className="rounded-3xl bg-white p-6 shadow-lg">
-          <h1 className="text-2xl font-bold text-navy">{business.name}</h1>
+          <h1 className="text-2xl font-bold text-navy">
+            <ShopNameWithTier name={business.name as string} tier={tier} />
+          </h1>
           <p className="mt-3 text-lg text-navy">Ye shop abhi available nahi.</p>
         </section>
       ) : (
-        <CustomerJoin business={{ id: business.id, name: business.name, category }} />
+        <CustomerJoin business={{ id: business.id as string, name: business.name as string, category, tier }} />
       )}
     </main>
   );

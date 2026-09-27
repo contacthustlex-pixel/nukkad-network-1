@@ -19,20 +19,7 @@ export function PartnerSignupForm() {
     const form = new FormData(event.currentTarget);
     const response = await fetch("/api/partner/signup", {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        shop_name: form.get("shop_name"),
-        slug: form.get("slug"),
-        phone: form.get("phone"),
-        owner_name: form.get("owner_name"),
-        category: form.get("category"),
-        daily_footfall: form.get("daily_footfall"),
-        peak_hours: form.get("peak_hours"),
-        customer_type: form.get("customer_type"),
-        pincode: form.get("pincode"),
-        area: form.get("area"),
-        address: form.get("address"),
-      }),
+      body: form,
     });
     const body = await response.json();
     setLoading(false);
@@ -131,6 +118,33 @@ export function PartnerSignupForm() {
         <option value="families">Families</option>
         <option value="mixed">Mixed</option>
       </select>
+      <input
+        name="price_min"
+        required
+        type="number"
+        min="0"
+        step="1"
+        placeholder="Sabse sasti service ka rate (₹)"
+        className="w-full rounded-xl border px-3 py-2"
+      />
+      <input
+        name="price_max"
+        required
+        type="number"
+        min="0"
+        step="1"
+        placeholder="Sabse mehngi service ka rate (₹)"
+        className="w-full rounded-xl border px-3 py-2"
+      />
+      <label className="block text-sm text-brand-black/80">
+        Price list / menu photo (optional)
+        <input
+          name="price_list"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
+          className="mt-1 w-full text-sm"
+        />
+      </label>
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
       <button disabled={loading} className="w-full rounded-full bg-brand-blue py-3 font-semibold text-white">
         {loading ? "Bhej rahe hain..." : "Apply"}

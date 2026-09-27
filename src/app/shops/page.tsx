@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { ShopNameWithTier } from "@/components/tier-badge";
 import { categoryIcon } from "@/lib/categories";
 import { shopLocationRank } from "@/lib/locations";
 import { createServiceClient } from "@/lib/supabase-server";
+import { parseTier, tiersCompatible } from "@/lib/tiers";
 
 type Business = {
   id: string;
@@ -17,6 +19,7 @@ type Business = {
   longitude: number | null;
   maps_url: string | null;
   instagram_url: string | null;
+  tier: string | null;
 };
 
 export default async function ShopsPage({
@@ -62,6 +65,8 @@ export default async function ShopsPage({
     longitude: sourceShop?.longitude != null ? Number(sourceShop.longitude) : null,
   };
 
+  const sourceTier = parseTier(sourceShop?.tier ?? null);
+
   const names = new Map((categories ?? []).map((row) => [row.id, row.name as string]));
   const used = new Set((redemptions ?? []).map((row) => row.business_id as string));
   const eligible = ((businesses ?? []) as Business[])
@@ -69,7 +74,8 @@ export default async function ShopsPage({
       (shop) =>
         shop.id !== issued.source_business_id &&
         !used.has(shop.id) &&
-        (chainId == null || shop.chain_id === chainId),
+        (chainId == null || shop.chain_id === chainId) &&
+        tiersCompatible(sourceTier, parseTier(shop.tier)),
     )
     .sort((a, b) => {
       const rankA = shopLocationRank(
@@ -99,7 +105,7 @@ export default async function ShopsPage({
       <Logo />
       <h1 className="text-2xl font-bold text-navy">Linked shops</h1>
       <p className="mt-2 text-sm text-brand-black/80">
-        Pehle aapke pincode / area ki shops, phir baaki network. Chain merge ke baad sirf chain dikhegi.
+        Pehle aapke pincode / area ki shops, phir baaki network. Sirf same/adjacent tier (E↔M↔P).
       </p>
       {eligible.length === 0 ? <p className="text-navy">Abhi koi shop available nahi.</p> : null}
       <ul className="space-y-3">
@@ -117,7 +123,7 @@ export default async function ShopsPage({
               ) : null}
               <p className="text-lg font-semibold text-navy">
                 <span className="mr-2" aria-hidden>{categoryIcon(category)}</span>
-                {shop.name}
+                <ShopNameWithTier name={shop.name} tier={parseTier(shop.tier)} className="inline-flex" />
               </p>
               <p className="text-sm text-navy/70">
                 {category}

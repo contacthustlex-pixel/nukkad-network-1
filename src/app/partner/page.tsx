@@ -4,10 +4,12 @@ import { PartnerChainBanner } from "@/components/partner-chain-banner";
 import { PartnerDesk } from "@/components/partner-desk";
 import { PartnerLogin } from "@/components/partner-login";
 import { ReferralCustomerPanel } from "@/components/referral-customer-panel";
+import { ShopNameWithTier } from "@/components/tier-badge";
 import { loadReferralCustomerRows } from "@/lib/referrals";
 import { readPartner } from "@/lib/session";
 import { createServiceClient } from "@/lib/supabase-server";
 import { currentWeekBounds } from "@/lib/week";
+import { parseTier } from "@/lib/tiers";
 
 export default async function PartnerPage() {
   const jar = await cookies();
@@ -40,13 +42,16 @@ export default async function PartnerPage() {
 
   const chainReady = Boolean(business.chain_id);
   const chainBanner = notices?.[0]?.message as string | undefined;
+  const shopTier = parseTier(business.tier as string | null);
 
   if (business.status === "blocked") {
     return (
       <main className="mx-auto flex min-h-full max-w-lg flex-col gap-4 px-4 py-10">
         <Logo />
         <section className="rounded-3xl bg-white p-6 shadow">
-          <h1 className="text-2xl font-bold">{business.name}</h1>
+          <h1 className="text-2xl font-bold">
+            <ShopNameWithTier name={business.name as string} tier={shopTier} />
+          </h1>
           <p className="mt-3 text-lg">Payment pending hai, isliye shop block hai.</p>
           <p className="mt-4 rounded-2xl bg-brand-yellow px-4 py-4 text-center text-xl font-bold text-brand-black">
             UPI nukkad@upi
@@ -86,7 +91,9 @@ export default async function PartnerPage() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <Logo />
-          <h1 className="mt-3 text-3xl font-bold text-brand-blue">{business.name}</h1>
+          <h1 className="mt-3 text-3xl font-bold text-brand-blue">
+            <ShopNameWithTier name={business.name as string} tier={shopTier} />
+          </h1>
           <p className="text-sm text-brand-black/60">Partner dashboard</p>
           {business.area || business.pincode ? (
             <p className="mt-1 text-sm text-brand-blue/80">

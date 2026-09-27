@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { ShopNameWithTier } from "@/components/tier-badge";
 import { createServiceClient } from "@/lib/supabase-server";
 import { categoryIcon } from "@/lib/categories";
+import { parseTier } from "@/lib/tiers";
 
 export default async function AboutPage() {
   const supabase = createServiceClient();
@@ -34,7 +36,8 @@ export default async function AboutPage() {
           return (
             <li key={shop.id} className="rounded-xl border border-brand-blue/10 bg-white p-4">
               <p className="font-bold text-brand-black">
-                {categoryIcon(category)} {shop.name}
+                {categoryIcon(category)}{" "}
+                <ShopNameWithTier name={shop.name as string} tier={parseTier(shop.tier as string | null)} />
               </p>
               <p className="text-sm text-brand-blue/70">{category}</p>
               <div className="mt-2 flex flex-wrap gap-3 text-sm font-semibold">

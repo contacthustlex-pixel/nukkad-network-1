@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { ShopNameWithTier } from "@/components/tier-badge";
+import type { ShopTier } from "@/lib/tiers";
 
 type Issued = {
   code: string;
@@ -12,7 +14,7 @@ type Issued = {
 export function CustomerJoin({
   business,
 }: {
-  business: { id: string; name: string; category: string };
+  business: { id: string; name: string; category: string; tier?: ShopTier | null };
 }) {
   const [step, setStep] = useState<"form" | "otp" | "done">("form");
   const [name, setName] = useState("");
@@ -98,9 +100,13 @@ export function CustomerJoin({
   return (
     <section className="rounded-3xl bg-white p-6 shadow-lg">
       <p className="text-sm text-navy/70">{business.category}</p>
-      <h1 className="mt-1 text-2xl font-bold text-navy">{business.name}</h1>
+      <h1 className="mt-1 text-2xl font-bold text-navy">
+        <ShopNameWithTier name={business.name} tier={business.tier ?? null} />
+      </h1>
       <p className="mt-2 text-sm text-brand-blue/80">
-        Naam aur phone daalo. Yeh detail <strong>{business.name}</strong> ke partner dashboard aur Nukkad Admin par dikhegi.
+        Naam aur phone daalo. Yeh detail{" "}
+        <ShopNameWithTier name={business.name} tier={business.tier ?? null} className="inline-flex font-normal" /> ke
+        partner dashboard aur Nukkad Admin par dikhegi.
         Code WhatsApp par aayega.
       </p>
       {step === "form" ? (
