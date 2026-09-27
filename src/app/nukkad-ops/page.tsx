@@ -33,7 +33,7 @@ export default async function OpsAdminPage() {
     supabase
       .from("businesses")
       .select(
-        "id,name,slug,phone,chain_id,status,owner_name,daily_footfall,peak_hours,customer_type,category_id,created_at",
+        "id,name,slug,phone,chain_id,status,owner_name,daily_footfall,peak_hours,customer_type,category_id,created_at,pincode,area,address,latitude,longitude",
       )
       .order("created_at", { ascending: false })
       .limit(200),
@@ -75,6 +75,9 @@ export default async function OpsAdminPage() {
       daily_footfall: row.daily_footfall != null ? Number(row.daily_footfall) : null,
       peak_hours: (row.peak_hours as string | null) ?? null,
       customer_type: (row.customer_type as string | null) ?? null,
+      pincode: (row.pincode as string | null) ?? null,
+      area: (row.area as string | null) ?? null,
+      address: (row.address as string | null) ?? null,
       created_at: row.created_at as string,
     }));
 

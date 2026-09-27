@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { NUKKAD_AREAS } from "@/lib/locations";
 
 const categories = ["Cafe", "Salon", "Laundry", "Gym", "Xerox"];
 
@@ -28,6 +29,9 @@ export function PartnerSignupForm() {
         daily_footfall: form.get("daily_footfall"),
         peak_hours: form.get("peak_hours"),
         customer_type: form.get("customer_type"),
+        pincode: form.get("pincode"),
+        area: form.get("area"),
+        address: form.get("address"),
       }),
     });
     const body = await response.json();
@@ -82,6 +86,30 @@ export function PartnerSignupForm() {
           </option>
         ))}
       </select>
+      <input
+        name="pincode"
+        required
+        pattern="[0-9]{6}"
+        maxLength={6}
+        inputMode="numeric"
+        placeholder="Pincode (6 digit)"
+        className="w-full rounded-xl border px-3 py-2"
+      />
+      <select name="area" required className="w-full rounded-xl border px-3 py-2">
+        <option value="">Area select karo</option>
+        {NUKKAD_AREAS.map((area) => (
+          <option key={area} value={area}>
+            {area}
+          </option>
+        ))}
+      </select>
+      <textarea
+        name="address"
+        required
+        rows={2}
+        placeholder="Full shop address"
+        className="w-full rounded-xl border px-3 py-2"
+      />
       <input
         name="daily_footfall"
         required

@@ -88,6 +88,12 @@ export default async function PartnerPage() {
           <Logo />
           <h1 className="mt-3 text-3xl font-bold text-brand-blue">{business.name}</h1>
           <p className="text-sm text-brand-black/60">Partner dashboard</p>
+          {business.area || business.pincode ? (
+            <p className="mt-1 text-sm text-brand-blue/80">
+              {[business.area, business.pincode ? `PIN ${business.pincode}` : null].filter(Boolean).join(" · ")}
+            </p>
+          ) : null}
+          {business.address ? <p className="text-xs text-brand-black/50">{business.address}</p> : null}
         </div>
         <p className="text-sm uppercase tracking-wide text-brand-blue/60">{business.status}</p>
       </div>

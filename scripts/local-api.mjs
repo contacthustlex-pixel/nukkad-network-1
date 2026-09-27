@@ -54,6 +54,12 @@ async function init() {
   } catch {
     /* optional migration */
   }
+  try {
+    const location = readFileSync(new URL("../supabase/migrations/007_location_fields.sql", import.meta.url), "utf8");
+    await db.exec(location);
+  } catch {
+    /* optional migration */
+  }
 }
 
 function isService(req) {

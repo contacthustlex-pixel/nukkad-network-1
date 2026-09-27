@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { geocodeAddress } from "@/lib/geocode";
+import { NUKKAD_AREAS } from "@/lib/locations";
 import { createServiceClient } from "@/lib/supabase-server";
 
 const CUSTOMER_TYPES = new Set(["students", "families", "mixed"]);
@@ -13,9 +15,18 @@ export async function POST(request: Request) {
   const dailyFootfall = Number(body?.daily_footfall);
   const peakHours = String(body?.peak_hours ?? "").trim();
   const customerType = String(body?.customer_type ?? "").toLowerCase();
+  const pincode = String(body?.pincode ?? "").replace(/\D/g, "");
+  const area = String(body?.area ?? "").trim();
+  const address = String(body?.address ?? "").trim();
 
-  if (!shopName || !slug || !/^\d{10}$/.test(phone) || !ownerName || !peakHours) {
+  if (!shopName || !slug || !/^\d{10}$/.test(phone) || !ownerName || !peakHours || !address) {
     return NextResponse.json({ error: "Shop details check karo" }, { status: 400 });
+  }
+  if (!/^\d{6}$/.test(pincode)) {
+    return NextResponse.json({ error: "6 digit pincode daalo" }, { status: 400 });
+  }
+  if (!area || !NUKKAD_AREAS.includes(area as (typeof NUKKAD_AREAS)[number])) {
+    return NextResponse.json({ error: "Area select karo" }, { status: 400 });
   }
   if (!Number.isInteger(dailyFootfall) || dailyFootfall < 0) {
     return NextResponse.json({ error: "Daily footfall number daalo" }, { status: 400 });
@@ -23,6 +34,8 @@ export async function POST(request: Request) {
   if (!CUSTOMER_TYPES.has(customerType)) {
     return NextResponse.json({ error: "Customer type select karo" }, { status: 400 });
   }
+
+  const { latitude, longitude } = await geocodeAddress({ address, pincode, area });
 
   const supabase = createServiceClient();
   const { data: cats } = await supabase.from("categories").select("id").eq("name", category).limit(1);
@@ -38,6 +51,11 @@ export async function POST(request: Request) {
     p_daily_footfall: dailyFootfall,
     p_peak_hours: peakHours,
     p_customer_type: customerType,
+    p_pincode: pincode,
+    p_area: area,
+    p_address: address,
+    p_latitude: latitude,
+    p_longitude: longitude,
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

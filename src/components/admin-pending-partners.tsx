@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { NUKKAD_AREAS } from "@/lib/locations";
 
 export type PendingPartner = {
   id: string;
@@ -13,12 +14,30 @@ export type PendingPartner = {
   daily_footfall: number | null;
   peak_hours: string | null;
   customer_type: string | null;
+  pincode: string | null;
+  area: string | null;
+  address: string | null;
   created_at: string;
 };
 
 export function AdminPendingPartners({ pending }: { pending: PendingPartner[] }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [pincodeFilter, setPincodeFilter] = useState("");
+  const [areaFilter, setAreaFilter] = useState("");
+
+  const pincodes = useMemo(() => {
+    const set = new Set(pending.map((row) => row.pincode).filter(Boolean) as string[]);
+    return [...set].sort();
+  }, [pending]);
+
+  const filtered = useMemo(() => {
+    return pending.filter((row) => {
+      if (pincodeFilter && row.pincode !== pincodeFilter) return false;
+      if (areaFilter && row.area !== areaFilter) return false;
+      return true;
+    });
+  }, [pending, pincodeFilter, areaFilter]);
 
   async function approve(id: string) {
     setMessage("");
@@ -48,17 +67,53 @@ export function AdminPendingPartners({ pending }: { pending: PendingPartner[] })
     <section className="rounded-2xl border border-brand-blue/10 bg-white p-5 shadow-sm">
       <h2 className="text-xl font-bold text-brand-blue">Pending applications</h2>
       <p className="text-sm text-brand-black/70">Nayi shops — approve karke partner login enable karo.</p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <label className="text-sm">
+          Pincode
+          <select
+            value={pincodeFilter}
+            onChange={(event) => setPincodeFilter(event.target.value)}
+            className="ml-2 rounded-lg border px-2 py-1"
+          >
+            <option value="">All</option>
+            {pincodes.map((code) => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm">
+          Area
+          <select
+            value={areaFilter}
+            onChange={(event) => setAreaFilter(event.target.value)}
+            className="ml-2 rounded-lg border px-2 py-1"
+          >
+            <option value="">All</option>
+            {NUKKAD_AREAS.map((area) => (
+              <option key={area} value={area}>
+                {area}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       {message ? <p className="mt-2 text-sm font-medium text-brand-blue">{message}</p> : null}
-      {pending.length === 0 ? (
-        <p className="mt-4 text-sm text-brand-blue/60">Koi pending signup nahi.</p>
+      {filtered.length === 0 ? (
+        <p className="mt-4 text-sm text-brand-blue/60">Is filter par koi pending signup nahi.</p>
       ) : (
         <ul className="mt-4 space-y-4">
-          {pending.map((shop) => (
+          {filtered.map((shop) => (
             <li key={shop.id} className="rounded-xl border border-brand-blue/10 p-4 text-sm">
               <p className="text-lg font-bold text-brand-black">{shop.name}</p>
               <p className="text-brand-blue/70">
                 {shop.category} · slug {shop.slug} · {shop.phone}
               </p>
+              <p className="mt-1 text-brand-black/80">
+                {shop.area || "—"} · PIN {shop.pincode || "—"}
+              </p>
+              {shop.address ? <p className="text-xs text-brand-black/60">{shop.address}</p> : null}
               <dl className="mt-2 grid gap-1 text-brand-black/80 sm:grid-cols-2">
                 <div>
                   <dt className="text-xs uppercase text-brand-blue/50">Owner</dt>
