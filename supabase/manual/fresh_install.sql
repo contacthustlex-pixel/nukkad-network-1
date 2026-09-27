@@ -1209,6 +1209,8 @@ begin
 end;
 $$;
 
+drop function if exists public.resolve_dispute(uuid, text);
+
 create or replace function public.resolve_dispute(dispute_id uuid, outcome text)
 returns jsonb
 language plpgsql
