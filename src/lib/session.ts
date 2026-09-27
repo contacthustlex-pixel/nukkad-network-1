@@ -29,3 +29,21 @@ export function readPartner(token: string | undefined) {
   if (Number(exp) < Date.now()) return null;
   return businessId;
 }
+
+export function signAdmin() {
+  const exp = Date.now() + 12 * 60 * 60 * 1000;
+  const payload = `admin.${exp}`;
+  const sig = createHmac("sha256", secret()).update(payload).digest("hex");
+  return `${payload}.${sig}`;
+}
+
+export function readAdmin(token: string | undefined) {
+  if (!token) return false;
+  const parts = token.split(".");
+  if (parts.length !== 3 || parts[0] !== "admin") return false;
+  const expected = createHmac("sha256", secret()).update(`${parts[0]}.${parts[1]}`).digest("hex");
+  const left = Buffer.from(parts[2]);
+  const right = Buffer.from(expected);
+  if (left.length !== right.length || !timingSafeEqual(left, right)) return false;
+  return Number(parts[1]) >= Date.now();
+}
