@@ -1,0 +1,44 @@
+---
+description: Nukkad Network core rules, rate cards, tables, and design
+alwaysApply: true
+---
+
+# Nukkad Network
+
+- project = Nukkad Network
+- stack = Next.js App Router + TS + Tailwind, Supabase, EasySocial WhatsApp BSP, MSG91 OTP, Vercel cron, Recharts
+
+## CORE RULES
+
+- One active code per customer; a new scan supersedes the previous active code.
+- Code format `NK-XXXXX`: uppercase alphanumeric, excluding `0`, `O`, `1`, `I`. Expiry is 7 days.
+- Lifetime one redemption per customer per business.
+- A code is invalid at its source business.
+- Discount is 10% of gross, capped by the category rate card.
+- Referrer earns 5% of GROSS and the platform earns 5% of GROSS, unless that category's rate card sets a flat amount.
+- The next code is auto-issued and linked by `source_redemption_id`.
+- Sunday settle, Monday block; marking a settlement paid unblocks the business.
+- WhatsApp is a channel only. Postgres is the source of truth.
+- The shopkeeper never generates codes.
+- All database writes go through `SECURITY DEFINER` RPCs only.
+
+## RATE CARDS
+
+| Category | Discount | Cap | Referrer | Platform | Min bill |
+| --- | --- | --- | --- | --- | --- |
+| Cafe | 10% | 80 | 5% gross | 5% gross | 0 |
+| Salon | 10% | 200 | 5% gross | 5% gross | 0 |
+| Laundry | 10% | 60 | 5% gross | 5% gross | 0 |
+| Gym | 10% | 150 | 5% gross | 5% gross | 0 |
+| Xerox | 10% | 20 | flat 5 | flat 5 | 50 |
+
+## TABLES
+
+`categories`, `rate_cards`, `businesses`, `customers`, `otp_codes`, `referral_codes`, `redemptions`, `commission_ledger`, `disputes`, `settlements`, `followup_responses`
+
+## DESIGN
+
+- Navy `#0E3A66`, amber `#FFC94D`
+- Logo wordmark: Devanagari `नुक्कड़ NETWORK`
+- Customer UI is mobile-first Hinglish
+- Dashboards are desktop-first
