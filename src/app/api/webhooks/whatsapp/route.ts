@@ -29,8 +29,11 @@ export async function POST(request: Request) {
     reply = data?.code
       ? `${origin}/shops?c=${data.code}`
       : `Pehle code lo: ${origin}`;
-  } else if (text.includes("complaint")) {
+  } else   if (text.includes("complaint")) {
     reply = "Complaint ke liye receipt wale link par jao: /complaint/<id>. Hum 48 ghante mein verify karenge.";
+  } else if (["visited", "busy", "expensive", "forgot", "behaviour"].includes(text.trim())) {
+    const { error } = await supabase.rpc("record_followup", { phone: from, reply: text.trim() });
+    reply = error ? "Reply save nahi hui. Dubara try karo." : "Dhanyavaad — reply save ho gaya.";
   } else {
     reply = "Menu: code · shops · complaint";
   }

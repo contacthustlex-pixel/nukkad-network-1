@@ -21,6 +21,15 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const business = data?.[0];
   if (!business) return NextResponse.json({ error: "Yeh number kisi shop ka nahi hai" }, { status: 404 });
+  if (business.status === "pending") {
+    return NextResponse.json({ error: "Admin abhi approve nahi kiya. Thodi der ruko." }, { status: 403 });
+  }
+  if (business.status === "rejected") {
+    return NextResponse.json({ error: "Yeh application reject ho chuki hai." }, { status: 403 });
+  }
+  if (business.status === "banned") {
+    return NextResponse.json({ error: "Shop banned hai." }, { status: 403 });
+  }
 
   const response = NextResponse.json({ id: business.id, name: business.name, status: business.status });
   response.cookies.set(partnerCookieName(), signPartner(business.id), {

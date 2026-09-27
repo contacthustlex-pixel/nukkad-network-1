@@ -25,9 +25,9 @@ export function PartnerSignupForm() {
         phone: form.get("phone"),
         owner_name: form.get("owner_name"),
         category: form.get("category"),
-        monthly_revenue: form.get("monthly_revenue"),
-        avg_order_value: form.get("avg_order_value"),
         daily_footfall: form.get("daily_footfall"),
+        peak_hours: form.get("peak_hours"),
+        customer_type: form.get("customer_type"),
       }),
     });
     const body = await response.json();
@@ -44,8 +44,8 @@ export function PartnerSignupForm() {
       <section className="mx-auto mt-8 max-w-lg rounded-2xl border border-brand-blue/15 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-brand-blue">Application bhej di</h1>
         <p className="mt-3 text-brand-black/80">
-          Nukkad team review karegi. Chain merge ke baad aapko WhatsApp par bataya jayega — phir partner login se QR
-          download karna.
+          Nukkad team review karegi. Approve hone ke baad isi phone se partner login karo — chain merge ke baad QR
+          milega.
         </p>
         <button
           type="button"
@@ -59,13 +59,22 @@ export function PartnerSignupForm() {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto mt-8 max-w-lg space-y-3 rounded-2xl border border-brand-blue/15 bg-white p-6 shadow-sm">
+    <form
+      onSubmit={submit}
+      className="mx-auto mt-8 max-w-lg space-y-3 rounded-2xl border border-brand-blue/15 bg-white p-6 shadow-sm"
+    >
       <h1 className="text-2xl font-bold text-brand-blue">Partner signup</h1>
-      <p className="text-sm text-brand-black/70">Shop details — admin approve karke chain mein merge karega.</p>
+      <p className="text-sm text-brand-black/70">Shop profile — admin approve karke chain mein merge karega.</p>
       <input name="shop_name" required placeholder="Shop name" className="w-full rounded-xl border px-3 py-2" />
       <input name="slug" required placeholder="URL slug (e.g. my-salon)" className="w-full rounded-xl border px-3 py-2" />
       <input name="owner_name" required placeholder="Owner name" className="w-full rounded-xl border px-3 py-2" />
-      <input name="phone" required pattern="[0-9]{10}" placeholder="10 digit phone" className="w-full rounded-xl border px-3 py-2" />
+      <input
+        name="phone"
+        required
+        pattern="[0-9]{10}"
+        placeholder="10 digit phone"
+        className="w-full rounded-xl border px-3 py-2"
+      />
       <select name="category" required className="w-full rounded-xl border px-3 py-2">
         {categories.map((c) => (
           <option key={c} value={c}>
@@ -73,9 +82,27 @@ export function PartnerSignupForm() {
           </option>
         ))}
       </select>
-      <input name="monthly_revenue" required type="number" min="0" step="1" placeholder="Monthly revenue (₹)" className="w-full rounded-xl border px-3 py-2" />
-      <input name="avg_order_value" required type="number" min="0" step="1" placeholder="Average order value (₹)" className="w-full rounded-xl border px-3 py-2" />
-      <input name="daily_footfall" required type="number" min="0" step="1" placeholder="Daily footfall (count)" className="w-full rounded-xl border px-3 py-2" />
+      <input
+        name="daily_footfall"
+        required
+        type="number"
+        min="0"
+        step="1"
+        placeholder="Daily footfall (count)"
+        className="w-full rounded-xl border px-3 py-2"
+      />
+      <input
+        name="peak_hours"
+        required
+        placeholder='Peak hours (e.g. "6pm-11pm")'
+        className="w-full rounded-xl border px-3 py-2"
+      />
+      <select name="customer_type" required className="w-full rounded-xl border px-3 py-2">
+        <option value="">Customer type</option>
+        <option value="students">Students</option>
+        <option value="families">Families</option>
+        <option value="mixed">Mixed</option>
+      </select>
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
       <button disabled={loading} className="w-full rounded-full bg-brand-blue py-3 font-semibold text-white">
         {loading ? "Bhej rahe hain..." : "Apply"}

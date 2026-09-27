@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 
 type Preview = {
@@ -199,12 +200,20 @@ export function PartnerDesk({
           <p className="mt-2 text-2xl font-bold">{netDue == null ? "Abhi settle nahi" : `Net due ₹${netDue}`}</p>
         </div>
         {chainReady ? (
-          <a
-            href="/api/partner/qr"
-            className="block rounded-full bg-brand-yellow px-4 py-3 text-center font-bold text-brand-black"
-          >
-            QR poster download
-          </a>
+          <div className="space-y-2">
+            <a
+              href="/api/partner/qr"
+              className="block rounded-full bg-brand-yellow px-4 py-3 text-center font-bold text-brand-black"
+            >
+              QR poster download
+            </a>
+            <Link
+              href="/kit"
+              className="block rounded-full border border-brand-blue/20 px-4 py-2 text-center text-sm font-semibold text-brand-blue"
+            >
+              Table kit guide
+            </Link>
+          </div>
         ) : (
           <p className="rounded-2xl border border-brand-blue/15 bg-white px-4 py-3 text-sm text-brand-blue/80">
             Customer QR tabhi milega jab admin aapki shop ko doosri partners ke saath chain mein merge kar dega.

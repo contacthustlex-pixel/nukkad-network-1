@@ -9,6 +9,7 @@ type Business = {
   slug: string;
   status: string;
   category_id: string;
+  chain_id: string | null;
   maps_url: string | null;
   instagram_url: string | null;
 };
@@ -47,17 +48,23 @@ export default async function ShopsPage({
     supabase.from("customers").select("phone").eq("id", issued.customer_id).limit(1),
   ]);
 
+  const sourceShop = ((businesses ?? []) as Business[]).find((shop) => shop.id === issued.source_business_id);
+  const chainId = sourceShop?.chain_id ?? null;
+
   const names = new Map((categories ?? []).map((row) => [row.id, row.name as string]));
   const used = new Set((redemptions ?? []).map((row) => row.business_id as string));
   const eligible = ((businesses ?? []) as Business[]).filter(
-    (shop) => shop.id !== issued.source_business_id && !used.has(shop.id),
+    (shop) =>
+      shop.id !== issued.source_business_id &&
+      !used.has(shop.id) &&
+      (chainId == null || shop.chain_id === chainId),
   );
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-8">
       <Logo />
       <h1 className="text-2xl font-bold text-navy">Linked shops</h1>
-      <p className="text-sm text-navy/80">In shops par apna code dikhao. Jahan pehle discount le chuke ho, woh nahi dikhega.</p>
+      <p className="mt-2 text-sm text-brand-black/80">In shops par apna code dikhao. Chain merge ke baad sirf usi chain ki shops dikhengi.</p>
       {eligible.length === 0 ? <p className="text-navy">Abhi koi shop available nahi.</p> : null}
       <ul className="space-y-3">
         {eligible.map((shop) => {

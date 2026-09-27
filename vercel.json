@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/block",
       "schedule": "30 18 * * 0"
+    },
+    {
+      "path": "/api/cron/followup",
+      "schedule": "0 6 * * *"
     }
   ]
 }

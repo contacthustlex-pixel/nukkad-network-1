@@ -52,6 +52,9 @@ export default async function MyCodePage({
             <p className="text-xs text-navy/50">
               {new Date(row.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
             </p>
+            <Link href={`/complaint/${row.id}`} className="mt-2 inline-block text-xs font-semibold text-red-700 underline">
+              Bill galat? Complaint
+            </Link>
           </li>
         ))}
         {(redemptions ?? []).length === 0 ? <li className="text-sm text-navy/70">Abhi koi visit nahi.</li> : null}

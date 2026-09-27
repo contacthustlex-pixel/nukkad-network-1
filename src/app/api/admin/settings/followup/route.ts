@@ -9,11 +9,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Admin login karo" }, { status: 401 });
   }
   const body = await request.json().catch(() => null);
-  const id = String(body?.id ?? "");
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  const enabled = Boolean(body?.enabled);
 
   const supabase = createServiceClient();
-  const { data, error } = await supabase.rpc("approve_pending_business", { p_business_id: id });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json(data);
+  const { error } = await supabase.rpc("set_setting", {
+    setting_key: "followup_auto",
+    setting_value: enabled,
+  });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true, followup_auto: enabled });
 }

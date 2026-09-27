@@ -22,7 +22,7 @@ const sections = [
   },
   {
     title: "Partner signup",
-    desc: "Nayi shop? Revenue, AOV, footfall bhejo. Admin approve + chain merge ke baad QR milega.",
+    desc: "Nayi shop? Footfall, peak hours, customer type bhejo. Admin approve + chain merge ke baad QR milega.",
     href: "/partner/signup",
     cta: "Signup apply",
   },

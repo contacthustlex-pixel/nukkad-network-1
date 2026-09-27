@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const supabase = createServiceClient();
-  const { data, error } = await supabase.rpc("approve_pending_business", { p_business_id: id });
+  const { data, error } = await supabase.rpc("reject_pending_business", { p_business_id: id });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json(data);
 }

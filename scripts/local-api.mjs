@@ -42,6 +42,18 @@ async function init() {
   } catch {
     /* optional migration */
   }
+  try {
+    const settings = readFileSync(new URL("../supabase/migrations/005_settings_disputes_admin.sql", import.meta.url), "utf8");
+    await db.exec(settings);
+  } catch {
+    /* optional migration */
+  }
+  try {
+    const signup = readFileSync(new URL("../supabase/migrations/006_partner_signup.sql", import.meta.url), "utf8");
+    await db.exec(signup);
+  } catch {
+    /* optional migration */
+  }
 }
 
 function isService(req) {

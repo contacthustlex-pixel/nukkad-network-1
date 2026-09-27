@@ -10,10 +10,13 @@ export async function POST(request: Request) {
   }
   const body = await request.json().catch(() => null);
   const id = String(body?.id ?? "");
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  const outcome = String(body?.outcome ?? "") as "upheld" | "rejected";
+  if (!id || (outcome !== "upheld" && outcome !== "rejected")) {
+    return NextResponse.json({ error: "id and outcome required" }, { status: 400 });
+  }
 
   const supabase = createServiceClient();
-  const { data, error } = await supabase.rpc("approve_pending_business", { p_business_id: id });
+  const { data, error } = await supabase.rpc("resolve_dispute", { dispute_id: id, outcome });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json(data);
 }
