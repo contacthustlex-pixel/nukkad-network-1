@@ -72,14 +72,15 @@ function filters(params) {
         values.push(item);
         return `$${values.length}`;
       });
-      clauses.push(`${key} in (${placeholders.join(", ")})`);
+      clauses.push(`${key}::text in (${placeholders.join(", ")})`);
       continue;
     }
     values.push(raw);
     const idx = `$${values.length}`;
     const sqlOp = { eq: "=", neq: "<>", gt: ">", gte: ">=", lt: "<", lte: "<=", like: "like", ilike: "ilike" }[op];
     if (!sqlOp) throw new Error("bad filter " + op);
-    clauses.push(`${key} ${sqlOp} ${idx}`);
+    if (op === "eq" || op === "neq") clauses.push(`${key}::text ${sqlOp} ${idx}`);
+    else clauses.push(`${key} ${sqlOp} ${idx}`);
   }
   return { where: clauses.length ? `where ${clauses.join(" and ")}` : "", values };
 }
@@ -172,6 +173,17 @@ async function handle(req, res) {
     const offset = Number(url.searchParams.get("offset") || 0);
     const sql = `select ${columns(url.searchParams)} from ${table} ${where} ${orderBy(url.searchParams)} limit ${limit} offset ${offset}`;
     const rows = await withRole(service, () => db.query(sql, values));
+    const wantsObject = String(req.headers.accept || "").includes("application/vnd.pgrst.object+json");
+    if (wantsObject) {
+      if (rows.rows.length !== 1) {
+        res.writeHead(406, headers);
+        res.end(JSON.stringify({ message: "JSON object requested, multiple (or no) rows returned" }));
+        return;
+      }
+      res.writeHead(200, headers);
+      res.end(JSON.stringify(rows.rows[0]));
+      return;
+    }
     const end = rows.rows.length === 0 ? 0 : offset + rows.rows.length - 1;
     res.writeHead(200, { ...headers, "content-range": `${offset}-${end}/${total}` });
     res.end(JSON.stringify(rows.rows));
