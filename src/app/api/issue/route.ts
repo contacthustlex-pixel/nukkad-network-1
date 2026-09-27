@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyOtp } from "@/lib/otp";
 import { createServiceClient } from "@/lib/supabase-server";
+import { sendTemplate } from "@/lib/whatsapp";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -26,6 +27,10 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+    await sendTemplate("T1", phone, {
+      name,
+      code: String(data?.code ?? ""),
+    });
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
